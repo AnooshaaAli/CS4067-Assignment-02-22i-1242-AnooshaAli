@@ -1,0 +1,208 @@
+import { useState, useEffect } from "react";
+import "../styles/Booking.css";
+
+const BookingsPage = () => {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [sortField, setSortField] = useState("id");
+  const [sortDirection, setSortDirection] = useState("asc");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  useEffect(() => {
+    setCurrentUserId(localStorage.getItem("user_id"));
+  }, []);
+
+  useEffect(() => {
+    if (currentUserId) {
+      fetchBookings();
+    }
+  }, [currentUserId]);
+
+  useEffect(() => {
+    console.log("Updated bookings state:", bookings);
+  }, [bookings]);
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://127.0.0.1:8000/bookings/");
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("Fetched bookings:", data);
+        console.log("Current User ID:", currentUserId);
+
+        const userBookings = data.filter(booking => booking.user_id == currentUserId);
+        console.log("Filtered Bookings:", userBookings);
+        setBookings(userBookings);
+      } else {
+        setError("Failed to fetch bookings.");
+      }
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      setError("An error occurred while fetching bookings.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePayment = async (booking) => {
+    try {
+      const paymentData = {
+        user_id: currentUserId,
+        amount: booking.tickets * 50 // Assuming each ticket costs 50
+      };
+      
+      const response = await fetch("http://127.0.0.1:8000/payments/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(paymentData)
+      });
+      
+      if (response.ok) {
+        alert("Payment successful! Booking confirmed.");
+        fetchBookings(); // Refresh bookings after payment
+      } else {
+        alert("Payment failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      alert("An error occurred while processing payment.");
+    }
+  };
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const sortedAndFilteredBookings = [...bookings]
+    .filter((booking) => {
+      const searchTerm = searchQuery.toLowerCase();
+      return (
+        booking.id.toString().includes(searchTerm) ||
+        booking.event_id.toString().includes(searchTerm) ||
+        (booking.status && booking.status.toLowerCase().includes(searchTerm))
+      );
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      if (a[sortField] > b[sortField]) {
+        comparison = 1;
+      } else if (a[sortField] < b[sortField]) {
+        comparison = -1;
+      }
+      return sortDirection === "desc" ? comparison * -1 : comparison;
+    });
+
+  const refreshBookings = () => {
+    fetchBookings();
+  };
+
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "confirmed":
+        return "status-confirmed";
+      case "pending":
+        return "status-pending";
+      case "cancelled":
+        return "status-cancelled";
+      default:
+        return "";
+    }
+  };
+
+  return (
+    <div className="bookings-container">
+      <h2 className="bookings-title">My Bookings</h2>
+      
+      <div className="bookings-actions">
+        <div className="search-container">
+          <input
+            type="text"
+            placeholder="Search bookings..."
+            value={searchQuery}
+            onChange={handleSearch}
+            className="search-input"
+          />
+        </div>
+        <button onClick={refreshBookings} className="refresh-button">
+          Refresh
+        </button>
+      </div>
+      
+      {loading ? (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading bookings...</p>
+        </div>
+      ) : error ? (
+        <div className="error-container">
+          <p className="error-message">{error}</p>
+          <button onClick={refreshBookings} className="retry-button">
+            Retry
+          </button>
+        </div>
+      ) : sortedAndFilteredBookings.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">📋</div>
+          <p className="empty-text">
+            {searchQuery ? "No matching bookings found." : "You have no bookings yet."}
+          </p>
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className="clear-search-button">
+              Clear Search
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="bookings-table-container" key={bookings.length}>
+          <table className="bookings-table">
+            <thead>
+              <tr>
+                <th onClick={() => handleSort("id")}>Booking ID</th>
+                <th onClick={() => handleSort("event_id")}>Event ID</th>
+                <th onClick={() => handleSort("tickets")}>Tickets</th>
+                <th onClick={() => handleSort("status")}>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedAndFilteredBookings.map((booking) => (
+                <tr key={booking.id}>
+                  <td>{booking.id}</td>
+                  <td>{booking.event_id}</td>
+                  <td>{booking.tickets}</td>
+                  <td>
+                    <span className={`status-badge ${getStatusColor(booking.status)}`}>
+                      {booking.status || "N/A"}
+                    </span>
+                  </td>
+                  <td>
+                    {booking.status.toLowerCase() === "pending" ? (
+                      <button onClick={() => handlePayment(booking)} className="pay-button">Pay</button>
+                    ) : (
+                      <button className="view-details-button">View</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default BookingsPage;

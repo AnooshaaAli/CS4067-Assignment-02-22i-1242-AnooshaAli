@@ -8,109 +8,34 @@ const BookingsPage = () => {
   const [sortField, setSortField] = useState("id");
   const [sortDirection, setSortDirection] = useState("asc");
   const [searchQuery, setSearchQuery] = useState("");
-  const [processingPayment, setProcessingPayment] = useState(null);
-  const [paymentMessage, setPaymentMessage] = useState({ text: "", type: "" });
 
-  const [currentUserId, setCurrentUserId] = useState(null);
-
-  useEffect(() => {
-    setCurrentUserId(localStorage.getItem("user_id"));
-  }, []);  // Runs once when the component mounts
-  
-  useEffect(() => {
-    if (currentUserId) {
-      fetchBookings();
-    }
-  }, [currentUserId]);  // Runs when currentUserId updates  
+  // Get the logged-in user's ID (assuming it's stored in localStorage)
+  const currentUserId = localStorage.getItem("userId"); 
 
   useEffect(() => {
-    console.log("Updated bookings state:", bookings);
-  }, [bookings]);  // Runs every time `bookings` changes
+    fetchBookings();
+  }, []);
 
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      console.log("Fetching bookings from server...");
       const response = await fetch("http://127.0.0.1:8000/bookings/");
-      
-      if (!response.ok) {
-        throw new Error(`Error fetching bookings: ${response.status}`);
-      }
-      
       const data = await response.json();
-      console.log("Fetched bookings data:", data);
-      
-      // Ensure user_id comparison is consistent in type
-      const userBookings = data.filter(booking => booking.user_id == currentUserId);
-      console.log("Filtered Bookings for user:", currentUserId, userBookings);
-      
-      setBookings(userBookings);
-      setLoading(false);
+
+      if (response.ok) {
+        console.log("Sample booking:", data[0]); // Debugging output
+        const userBookings = data.filter(booking => booking.user_id.toString() === currentUserId);
+        setBookings(userBookings);
+      } else {
+        setError("Failed to fetch bookings.");
+      }
     } catch (error) {
       console.error("Error fetching bookings:", error);
       setError("An error occurred while fetching bookings.");
+    } finally {
       setLoading(false);
     }
   };
-
-  const handlePayment = async (booking) => {
-    if (booking.status?.toLowerCase() === "completed") {
-      setPaymentMessage({
-        text: "This booking is already paid for.",
-        type: "info"
-      });
-      setTimeout(() => setPaymentMessage({ text: "", type: "" }), 3000);
-      return;
-    }
-  
-    try {
-      setProcessingPayment(booking.id);
-      const amount = booking.tickets * 10;
-  
-      const paymentResponse = await fetch("http://127.0.0.1:8000/payments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          user_id: currentUserId,
-          booking_id: booking.id,
-          amount: amount
-        }),
-      });
-  
-      const responseData = await paymentResponse.json();
-  
-      if (paymentResponse.ok) {
-        // Directly update the booking status in the frontend state
-        const updatedBookings = bookings.map((b) => {
-          if (b.id === booking.id) {
-            return { ...b, status: "completed" };
-          }
-          return b;
-        });
-  
-        // Update the bookings state directly
-        setBookings(updatedBookings);
-  
-        setPaymentMessage({
-          text: "Payment successful! Booking status updated to completed.",
-          type: "success"
-        });
-      } else {
-        throw new Error(responseData.detail || "Payment failed");
-      }
-    } catch (error) {
-      setPaymentMessage({
-        text: `Payment failed: ${error.message}`,
-        type: "error"
-      });
-    } finally {
-      setProcessingPayment(null);
-      setTimeout(() => setPaymentMessage({ text: "", type: "" }), 5000);
-    }
-  };
-  
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -125,7 +50,12 @@ const BookingsPage = () => {
     setSearchQuery(e.target.value);
   };
 
-  const sortedAndFilteredBookings = [...bookings]
+  // Filter bookings to only show the logged-in user's bookings
+  const filteredBookings = bookings.filter(
+    (booking) => booking.user_id.toString() === currentUserId
+  );
+
+  const sortedAndFilteredBookings = [...filteredBookings]
     .filter((booking) => {
       const searchTerm = searchQuery.toLowerCase();
       return (
@@ -146,28 +76,19 @@ const BookingsPage = () => {
 
   const refreshBookings = () => {
     fetchBookings();
-    // Clear any payment messages when refreshing
-    setPaymentMessage({ text: "", type: "" });
   };
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case "confirmed":
-        return "status-confirmed";
-      case "pending":
-        return "status-pending";
-      case "cancelled":
-        return "status-cancelled";
-      case "completed":
-        return "status-completed";
+      case 'confirmed':
+        return 'status-confirmed';
+      case 'pending':
+        return 'status-pending';
+      case 'cancelled':
+        return 'status-cancelled';
       default:
-        return "";
+        return '';
     }
-  };
-
-  const shouldShowPayButton = (status) => {
-    // Only show Pay button for pending or confirmed bookings
-    return status?.toLowerCase() === "pending" || status?.toLowerCase() === "confirmed";
   };
 
   return (
@@ -188,12 +109,6 @@ const BookingsPage = () => {
           Refresh
         </button>
       </div>
-      
-      {paymentMessage.text && (
-        <div className={`payment-message ${paymentMessage.type}`}>
-          {paymentMessage.text}
-        </div>
-      )}
       
       {loading ? (
         <div className="loading-container">
@@ -220,7 +135,7 @@ const BookingsPage = () => {
           )}
         </div>
       ) : (
-        <div className="bookings-table-container" key={bookings.length}>
+        <div className="bookings-table-container">
           <table className="bookings-table">
             <thead>
               <tr>
@@ -251,26 +166,7 @@ const BookingsPage = () => {
                     </span>
                   </td>
                   <td className="actions-cell">
-                    {shouldShowPayButton(booking.status) ? (
-                      <button 
-                        className={`view-details-button ${processingPayment === booking.id ? 'processing' : ''}`}
-                        onClick={() => handlePayment(booking)}
-                        disabled={processingPayment !== null}
-                      >
-                        {processingPayment === booking.id ? (
-                          <>
-                            <span className="button-spinner"></span>
-                            Processing...
-                          </>
-                        ) : (
-                          'Pay'
-                        )}
-                      </button>
-                    ) : booking.status?.toLowerCase() === "completed" ? (
-                      <span className="payment-complete">Paid</span>
-                    ) : (
-                      <span className="payment-unavailable">Unavailable</span>
-                    )}
+                    <button className="view-details-button">View</button>
                   </td>
                 </tr>
               ))}
@@ -281,7 +177,6 @@ const BookingsPage = () => {
       <div className="bookings-summary">
         <p>Total bookings: {sortedAndFilteredBookings.length}</p>
         <p>Total tickets: {sortedAndFilteredBookings.reduce((sum, booking) => sum + parseInt(booking.tickets || 0), 0)}</p>
-        <p>Completed payments: {sortedAndFilteredBookings.filter(booking => booking.status?.toLowerCase() === "completed").length}</p>
       </div>
     </div>
   );

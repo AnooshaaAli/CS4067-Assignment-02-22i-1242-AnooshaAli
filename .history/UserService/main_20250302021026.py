@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes.event_routes import router as event_router
 import requests
 from routes.booking_routes import router as booking_router
-from routes.payment_routes import router as payment_router
+from routes.booking_routes import router as booking_router
 from sqlalchemy.orm import Session
 
 # Import your database session function
@@ -31,7 +31,6 @@ app.add_middleware(
 
 app.include_router(event_router)
 app.include_router(booking_router)
-app.include_router(payment_router)
 
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()

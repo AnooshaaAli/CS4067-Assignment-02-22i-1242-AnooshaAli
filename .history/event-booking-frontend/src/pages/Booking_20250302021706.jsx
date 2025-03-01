@@ -30,30 +30,31 @@ const BookingsPage = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      console.log("Fetching bookings from server...");
       const response = await fetch("http://127.0.0.1:8000/bookings/");
-      
-      if (!response.ok) {
-        throw new Error(`Error fetching bookings: ${response.status}`);
-      }
-      
       const data = await response.json();
-      console.log("Fetched bookings data:", data);
-      
-      // Ensure user_id comparison is consistent in type
-      const userBookings = data.filter(booking => booking.user_id == currentUserId);
-      console.log("Filtered Bookings for user:", currentUserId, userBookings);
-      
-      setBookings(userBookings);
-      setLoading(false);
+  
+      if (response.ok) {
+        console.log("Fetched bookings:", data);
+        console.log("Current User ID:", currentUserId);
+  
+        // Ensure user_id comparison is consistent in type
+        const userBookings = data.filter(booking => booking.user_id == currentUserId);
+  
+        console.log("Filtered Bookings:", userBookings);
+        setBookings(userBookings);
+      } else {
+        setError("Failed to fetch bookings.");
+      }
     } catch (error) {
       console.error("Error fetching bookings:", error);
       setError("An error occurred while fetching bookings.");
+    } finally {
       setLoading(false);
     }
   };
 
   const handlePayment = async (booking) => {
+    // Only allow payment for pending or confirmed bookings
     if (booking.status?.toLowerCase() === "completed") {
       setPaymentMessage({
         text: "This booking is already paid for.",
@@ -65,8 +66,10 @@ const BookingsPage = () => {
   
     try {
       setProcessingPayment(booking.id);
-      const amount = booking.tickets * 10;
+      // Calculate payment amount
+      const amount = booking.tickets * 10; // Example: $10 per ticket
   
+      // Call our API gateway payment endpoint
       const paymentResponse = await fetch("http://127.0.0.1:8000/payments", {
         method: "POST",
         headers: {
@@ -79,28 +82,21 @@ const BookingsPage = () => {
         }),
       });
   
-      const responseData = await paymentResponse.json();
-  
       if (paymentResponse.ok) {
-        // Directly update the booking status in the frontend state
-        const updatedBookings = bookings.map((b) => {
-          if (b.id === booking.id) {
-            return { ...b, status: "completed" };
-          }
-          return b;
-        });
-  
-        // Update the bookings state directly
-        setBookings(updatedBookings);
+        // Payment successful - our API gateway will update the booking status automatically
+        // Refresh the bookings to show the updated status
+        await fetchBookings();
   
         setPaymentMessage({
           text: "Payment successful! Booking status updated to completed.",
           type: "success"
         });
       } else {
-        throw new Error(responseData.detail || "Payment failed");
+        const errorData = await paymentResponse.json();
+        throw new Error(errorData.detail || "Payment failed");
       }
     } catch (error) {
+      console.error("Payment error:", error);
       setPaymentMessage({
         text: `Payment failed: ${error.message}`,
         type: "error"
@@ -110,7 +106,6 @@ const BookingsPage = () => {
       setTimeout(() => setPaymentMessage({ text: "", type: "" }), 5000);
     }
   };
-  
 
   const handleSort = (field) => {
     if (sortField === field) {

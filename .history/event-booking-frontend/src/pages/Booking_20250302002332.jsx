@@ -30,30 +30,31 @@ const BookingsPage = () => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      console.log("Fetching bookings from server...");
       const response = await fetch("http://127.0.0.1:8000/bookings/");
-      
-      if (!response.ok) {
-        throw new Error(`Error fetching bookings: ${response.status}`);
-      }
-      
       const data = await response.json();
-      console.log("Fetched bookings data:", data);
-      
-      // Ensure user_id comparison is consistent in type
-      const userBookings = data.filter(booking => booking.user_id == currentUserId);
-      console.log("Filtered Bookings for user:", currentUserId, userBookings);
-      
-      setBookings(userBookings);
-      setLoading(false);
+  
+      if (response.ok) {
+        console.log("Fetched bookings:", data);
+        console.log("Current User ID:", currentUserId);
+  
+        // Ensure user_id comparison is consistent in type
+        const userBookings = data.filter(booking => booking.user_id == currentUserId);
+  
+        console.log("Filtered Bookings:", userBookings);
+        setBookings(userBookings);
+      } else {
+        setError("Failed to fetch bookings.");
+      }
     } catch (error) {
       console.error("Error fetching bookings:", error);
       setError("An error occurred while fetching bookings.");
+    } finally {
       setLoading(false);
     }
   };
 
   const handlePayment = async (booking) => {
+    // Only allow payment for pending or confirmed bookings
     if (booking.status?.toLowerCase() === "completed") {
       setPaymentMessage({
         text: "This booking is already paid for.",
@@ -62,11 +63,13 @@ const BookingsPage = () => {
       setTimeout(() => setPaymentMessage({ text: "", type: "" }), 3000);
       return;
     }
-  
+
     try {
       setProcessingPayment(booking.id);
-      const amount = booking.tickets * 10;
-  
+      // Calculate payment amount (in a real app, this would come from the booking details)
+      const amount = booking.tickets * 10; // Example: $10 per ticket
+
+      // Call the payment gateway API
       const paymentResponse = await fetch("http://127.0.0.1:8000/payments", {
         method: "POST",
         headers: {
@@ -74,43 +77,50 @@ const BookingsPage = () => {
         },
         body: JSON.stringify({
           user_id: currentUserId,
-          booking_id: booking.id,
-          amount: amount
+          amount: amount,
+          booking_id: booking.id
         }),
       });
-  
-      const responseData = await paymentResponse.json();
-  
+
       if (paymentResponse.ok) {
-        // Directly update the booking status in the frontend state
+        // If payment is successful, update the booking status locally
         const updatedBookings = bookings.map((b) => {
           if (b.id === booking.id) {
             return { ...b, status: "completed" };
           }
           return b;
         });
-  
-        // Update the bookings state directly
         setBookings(updatedBookings);
-  
+
+        // Update the booking status on the server
+        await fetch(`http://127.0.0.1:8000/bookings/${booking.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: "completed" }),
+        });
+
         setPaymentMessage({
           text: "Payment successful! Booking status updated to completed.",
           type: "success"
         });
       } else {
-        throw new Error(responseData.detail || "Payment failed");
+        const errorData = await paymentResponse.json();
+        throw new Error(errorData.message || "Payment failed");
       }
     } catch (error) {
+      console.error("Payment error:", error);
       setPaymentMessage({
         text: `Payment failed: ${error.message}`,
         type: "error"
       });
     } finally {
       setProcessingPayment(null);
+      // Clear the payment message after 5 seconds
       setTimeout(() => setPaymentMessage({ text: "", type: "" }), 5000);
     }
   };
-  
 
   const handleSort = (field) => {
     if (sortField === field) {

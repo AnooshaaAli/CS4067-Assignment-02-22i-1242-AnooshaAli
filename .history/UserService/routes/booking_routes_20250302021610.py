@@ -46,19 +46,6 @@ def create_booking(booking: BookingRequest):
 def update_booking(booking_id: int, data: dict):
     """Update a booking in the Booking Service"""
     try:
-        # Using PATCH instead of PUT if partial update is intended
-        response = requests.patch(f"{BOOKING_SERVICE_URL}/{booking_id}", json=data)
-        print(f"🔹 Response Status Code: {response.status_code}")  # Debugging
-        print(f"🔹 Response Content: {response.text}")  # Debugging
-        
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error: {e}")  # Debugging
-        raise HTTPException(status_code=500, detail=f"Failed to update booking: {str(e)}")
-
-    """Update a booking in the Booking Service"""
-    try:
         response = requests.put(f"{BOOKING_SERVICE_URL}/{booking_id}", json=data)
         print(f"🔹 Response Status Code: {response.status_code}")  # Debugging
         print(f"🔹 Response Content: {response.text}")  # Debugging
