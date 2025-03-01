@@ -1,0 +1,28 @@
+.events-container {
+  width: 100vw; /* Full viewport width */
+  min-height: 100vh; /* Full viewport height */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px;
+  background: #f9f9f9;
+}
+
+.events-list {
+  width: 90%; /* Use most of the screen width */
+  max-width: 800px; /* Prevent it from becoming too wide */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.event-card {
+  width: 100%; /* Make cards responsive */
+  max-width: 400px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
