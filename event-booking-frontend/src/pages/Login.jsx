@@ -13,18 +13,27 @@ const LoginPage = () => {
     e.preventDefault();
     try {
       const response = await axios.post("http://127.0.0.1:8000/token", {
-        username: email, // FastAPI uses "username" instead of "email"
+        username: email,
         password,
       }, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
 
       localStorage.setItem("token", response.data.access_token);
+
+      // Fetch user data to get ID
+      const userResponse = await axios.get("http://127.0.0.1:8000/users/me", {
+        headers: { Authorization: `Bearer ${response.data.access_token}` },
+      });
+
+      console.log("User Data:", userResponse.data); // Check if ID is present
+      localStorage.setItem("user_id", userResponse.data.id);
+
       navigate("/dashboard");
     } catch (err) {
       setError("Invalid email or password");
     }
-  };
+};
 
   return (
     <div className="login-container">
