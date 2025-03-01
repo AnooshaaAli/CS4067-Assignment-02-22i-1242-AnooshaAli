@@ -1,0 +1,39 @@
+.bookings-container {
+    padding: 20px;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+  }
+  
+  .bookings-title {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  .bookings-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  .booking-card {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 300px;
+  }
+  
+  .booking-card p {
+    margin: 5px 0;
+    font-size: 1rem;
+  }
+  
+  .error-message {
+    text-align: center;
+    color: red;
+    font-size: 1.2rem;
+  }
+  
