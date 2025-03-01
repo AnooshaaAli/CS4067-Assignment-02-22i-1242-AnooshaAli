@@ -5,7 +5,6 @@ import EventsPage from "./pages/Events";
 import DashboardPage from "./pages/Dashboard";
 import AddEventPage from "./pages/AddEvent";
 import BookingsPage from "./pages/Booking";
-import AddBookingPage from "./pages/AddBooking";
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -22,7 +21,6 @@ const AppRouter = () => {
         <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
         <Route path="/add-event" element={<PrivateRoute><AddEventPage /></PrivateRoute>} />
         <Route path="/bookings" element={<PrivateRoute><BookingsPage /></PrivateRoute>} />
-        <Route path="/add-booking" element={<PrivateRoute><AddBookingPage /></PrivateRoute>} />
         <Route path="/" element={<Navigate to="/login" />} />
       </Routes>
     </Router>
