@@ -10,6 +10,8 @@ from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 from routes.event_routes import router as event_router
 import requests
+from routes.booking_routes import router as booking_router
+from sqlalchemy.orm import Session
 
 # Import your database session function
 from database import get_db  # Ensure this is correct
@@ -27,6 +29,7 @@ app.add_middleware(
 )
 
 app.include_router(event_router)
+app.include_router(booking_router)
 
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()
@@ -86,16 +89,24 @@ async def login_for_access_token(
 
     return TokenResponse(access_token=access_token, token_type="bearer")
 
-async def get_current_user(token: str = Security(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        return email
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+    credentials_exception = HTTPException(status_code=401, detail="Could not validate credentials")
 
+    # Decode JWT token
+    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    email: str = payload.get("sub")
+    if email is None:
+        raise credentials_exception
+
+    # Use `execute` for AsyncSession
+    result = await db.execute(select(User).filter(User.email == email))
+    user = result.scalars().first()
+
+    if user is None:
+        raise credentials_exception
+
+    return user  
+    
 @app.get("/users/me")
-async def read_users_me(current_user: str = Depends(get_current_user)):
-    return {"email": current_user}
+async def read_users_me(current_user: User = Depends(get_current_user)):  
+    return {"id": current_user.id, "name": current_user.name, "email": current_user.email}
