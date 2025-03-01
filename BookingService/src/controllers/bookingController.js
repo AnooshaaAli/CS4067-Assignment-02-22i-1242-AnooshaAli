@@ -1,6 +1,5 @@
 const pool = require("../config/db");
 
-// Creates Booking
 exports.createBooking = async (req, res) => {
   const { user_id, event_id, tickets } = req.body;
 
