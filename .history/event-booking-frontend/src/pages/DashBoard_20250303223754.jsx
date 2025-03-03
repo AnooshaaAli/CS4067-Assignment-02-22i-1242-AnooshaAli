@@ -77,7 +77,7 @@ const DashboardPage = () => {
             {/* 🔹 View Notifications Button */}
             <button className="notifications-button" onClick={() => navigate("/notifications")}>
             🔔 View Notifications
-            </button>
+          </button>
           </header>
 
           {loading ? (

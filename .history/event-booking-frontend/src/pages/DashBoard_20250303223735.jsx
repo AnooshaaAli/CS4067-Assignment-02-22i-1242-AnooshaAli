@@ -74,10 +74,11 @@ const DashboardPage = () => {
           <header className="dashboard-header">
             <h1 className="welcome-text">Welcome to Your Dashboard</h1>
             <p className="welcome-subtext">Manage your events and bookings from one place</p>
-            {/* 🔹 View Notifications Button */}
-            <button className="notifications-button" onClick={() => navigate("/notifications")}>
-            🔔 View Notifications
+              {/* 🔹 View Notifications Button */}
+              <button className="notifications-button" onClick={() => navigate("/notifications")}>
+              🔔 View Notifications
             </button>
+          </header>
           </header>
 
           {loading ? (
