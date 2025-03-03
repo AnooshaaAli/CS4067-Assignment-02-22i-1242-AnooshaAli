@@ -35,7 +35,6 @@ exports.createBooking = async (req, res) => {
 
     // Publish event to RabbitMQ
     await publishBookingEvent({
-      type: "BOOKING_CREATED",
       booking_id: booking.id,
       user_id: booking.user_id,
       event_id: booking.event_id,
@@ -45,17 +44,6 @@ exports.createBooking = async (req, res) => {
     res.status(201).json(booking);
   } catch (error) {
     console.error("❌ Error creating booking:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
-
-// Get All Bookings
-exports.getBookings = async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM bookings");
-    res.json(result.rows);
-  } catch (error) {
-    console.error("❌ Error fetching bookings:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -83,7 +71,6 @@ exports.updateBooking = async (req, res) => {
 
     // Publish event to RabbitMQ
     await publishBookingEvent({
-      type: "BOOKING_UPDATED",
       booking_id: updatedBooking.id,
       user_id: updatedBooking.user_id,
       event_id: updatedBooking.event_id,
@@ -93,35 +80,6 @@ exports.updateBooking = async (req, res) => {
     res.status(200).json({ message: "Booking updated", booking: updatedBooking });
   } catch (error) {
     console.error("❌ Error updating booking:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Delete Booking
-exports.deleteBooking = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const result = await pool.query("DELETE FROM bookings WHERE id = $1 RETURNING *", [id]);
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
-
-    const deletedBooking = result.rows[0];
-
-    // Publish event to RabbitMQ
-    await publishBookingEvent({
-      type: "BOOKING_DELETED",
-      booking_id: deletedBooking.id,
-      user_id: deletedBooking.user_id,
-      event_id: deletedBooking.event_id,
-      status: "deleted",
-    });
-
-    res.status(200).json({ message: "Booking deleted", booking: deletedBooking });
-  } catch (error) {
-    console.error("❌ Error deleting booking:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
