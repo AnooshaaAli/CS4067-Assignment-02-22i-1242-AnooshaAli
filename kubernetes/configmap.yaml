@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: event-config
+  namespace: onlineeventbooking-i221242-anooshaali
+data:
+  MONGO_INITDB_DATABASE: events_db
+  DATABASE_URL: postgresql+asyncpg://postgres:123456@postgres-db:5432/user_service_db
+  RABBITMQ_URL: amqp://rabbitmq
+  MONGO_URI: mongodb://mongodb:27017/events_db
+  NOTIFICATION_DB: mongodb://mongodb:27017/notification_service

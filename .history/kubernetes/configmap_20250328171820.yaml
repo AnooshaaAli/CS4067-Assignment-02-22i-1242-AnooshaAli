@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: event-config
+  namespace: onlineeventbooking-i221242-anooshaali
+data:
+  POSTGRES_HOST: "postgres_db"
+  POSTGRES_PORT: "5432"
+  MONGO_URI: "mongodb://mongodb:27017/"
+  NOTIFICATION_API: "http://notification-service"
