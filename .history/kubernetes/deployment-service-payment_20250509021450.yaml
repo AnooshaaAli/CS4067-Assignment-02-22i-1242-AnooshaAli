@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: onlineeventbooking-i221242-anooshaali
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: anooshaaali293/cs4067-assignment-02-22i-1242-anooshaali-payment-service:latest 
+          imagePullPolicy: IfNotPresent 
+          ports:
+            - containerPort: 5004
+          env:
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://postgres:123456@postgres-servi:5432/booking_db"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: onlineeventbooking-i221242-anooshaali
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - protocol: TCP
+      port: 5004
+      targetPort: 5004
+  type: ClusterIP

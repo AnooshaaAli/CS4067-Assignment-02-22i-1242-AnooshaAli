@@ -1,0 +1,56 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: event-booking-ingress
+  namespace: onlineeventbooking-i221242-anooshaali
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: event-booking.local
+      http:
+        paths:
+          - path: /api/users(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 8000
+          - path: /api/events(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: event-service
+                port:
+                  number: 5002
+          - path: /api/bookings(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: booking-service
+                port:
+                  number: 5003
+          - path: /api/payments(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: payment-service
+                port:
+                  number: 5004
+          - path: /api/notifications(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 5005
+          # ✅ Frontend path (NO rewrite rule needed here)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

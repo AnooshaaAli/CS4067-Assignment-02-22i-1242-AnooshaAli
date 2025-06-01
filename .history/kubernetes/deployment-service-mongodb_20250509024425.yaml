@@ -1,0 +1,1 @@
+kubectl get pvc -n onlineeventbooking-i221242-anooshaali
